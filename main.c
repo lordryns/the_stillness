@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <strings.h>
 
-// global variables
+// global variables (these might change later tho, not constant despite caps)
 
 int GLOBAL_DEATH_AGE = 30;
 int GLOBAL_BIRTH_AGE = 10;
@@ -155,6 +155,7 @@ int main() {
 
   char points_text[20] = "Points:";
   char organisms_text[20] = "Active:";
+  char mouse_hover_organism_text[50] = "";
   int existing_organisms = 0;
   while (!WindowShouldClose()) {
     float delta_time = GetFrameTime();
@@ -222,6 +223,17 @@ int main() {
             if (organism.age > GLOBAL_DEATH_AGE) {
               organism.alive = false;
             }
+
+            if (CheckCollisionPointCircle(organism.position, GetMousePosition(),
+                                          organism.radius)) {
+              sprintf(mouse_hover_organism_text, "organism %d\nage: %d",
+                      organism.id, organism.age);
+              DrawText(mouse_hover_organism_text,
+                       GetMouseX() < GetScreenWidth() - 200 ? GetMouseX() + 50
+                                                            : GetMouseX() - 50,
+                       GetMouseY(), 15, WHITE);
+            }
+
             organisms.buffer[i] = organism;
           }
         }
