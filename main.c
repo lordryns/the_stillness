@@ -19,6 +19,7 @@ enum Dissolution {
   TEMPORAL,
   SPIRITUAL
 };
+
 struct StartCircle {
   Vector2 pos;
   Vector2 direction;
@@ -37,6 +38,7 @@ struct Button {
 
 struct Player {
   int points;
+  enum Dissolution active_dissolution;
 };
 
 struct Organism {
@@ -65,7 +67,9 @@ struct Button load_image_button(char *image_path, Vector2 pos) {
   return btn;
 }
 
-void handle_button_state(struct Button *btn, int id) {
+void handle_button_state(struct Button *btn, int id,
+                         enum Dissolution current_dissolution,
+                         enum Dissolution preferred_dissolution) {
   // to update the button position to always snap to the bottom os the screen
   // should probably move this to its own function
 
@@ -81,6 +85,8 @@ void handle_button_state(struct Button *btn, int id) {
   if (CheckCollisionPointRec(GetMousePosition(), btn->rect)) {
     DrawTexture(btn->texture, btn->pos.x, btn->pos.y, GREEN);
     DrawRectangleLinesEx(btn->rect, 1, WHITE);
+  } else if (current_dissolution == preferred_dissolution) {
+    DrawTexture(btn->texture, btn->pos.x, btn->pos.y, GREEN);
   } else {
 
     DrawTexture(btn->texture, btn->pos.x, btn->pos.y, WHITE);
@@ -125,7 +131,7 @@ int main() {
   InitWindow(500, 500, "Art of being");
   SetTargetFPS(60);
 
-  struct Player player = {100};
+  struct Player player = {100, NO_DISSOLUTION};
   struct StartCircle *circles = malloc(sizeof(struct StartCircle) * 10);
 
   struct OrganismAllocator organisms =
@@ -164,7 +170,6 @@ int main() {
     ClearBackground(BLACK);
     switch (current_screen) {
     case GAME:
-      game_screen();
 
       sprintf(points_text, "Points: %i", player.points);
       sprintf(organisms_text, "Active: %i", existing_organisms);
@@ -175,12 +180,31 @@ int main() {
       DrawLine(0, GetScreenHeight() - 80, GetScreenWidth(),
                GetScreenHeight() - 80, WHITE);
 
-      handle_button_state(&environemental_dissolution_btn, 1);
-      handle_button_state(&biological_dissolution_btn, 2);
+      handle_button_state(&environemental_dissolution_btn, 1,
+                          player.active_dissolution, ENVIRONMENTAL);
+      handle_button_state(&biological_dissolution_btn, 2,
+                          player.active_dissolution, BIOLOGICAL);
+
+      if (CheckCollisionPointRec(GetMousePosition(),
+                                 environemental_dissolution_btn.rect) &&
+          IsKeyDown(MOUSE_LEFT_BUTTON)) {
+        player.active_dissolution = ENVIRONMENTAL;
+      }
+
+      if (CheckCollisionPointRec(GetMousePosition(),
+                                 biological_dissolution_btn.rect) &&
+          IsKeyDown(MOUSE_LEFT_BUTTON)) {
+        player.active_dissolution = BIOLOGICAL;
+      }
+
+      if (IsKeyPressed(MOUSE_RIGHT_BUTTON) || IsKeyPressed(KEY_U)) {
+        player.active_dissolution = NO_DISSOLUTION;
+      }
       // DrawText(btn.text, 50, GetScreenHeight() -
       // 50, 15, WHITE);
       //
 
+      // printf("%d\n", player.active_dissolution);
       existing_organisms = 0;
       if (organisms.buffer != NULL) {
         for (int i = 0; i < organisms.index; i++) {
@@ -229,8 +253,8 @@ int main() {
               sprintf(mouse_hover_organism_text, "organism %d\nage: %d",
                       organism.id, organism.age);
               DrawText(mouse_hover_organism_text,
-                       GetMouseX() < GetScreenWidth() - 200 ? GetMouseX() + 50
-                                                            : GetMouseX() - 50,
+                       GetMouseX() < GetScreenWidth() - 100 ? GetMouseX() + 30
+                                                            : GetMouseX() - 100,
                        GetMouseY(), 15, WHITE);
             }
 
@@ -278,5 +302,3 @@ void start_screen_animation(struct StartCircle *circles) {
     DrawCircle(circles[i].pos.x, circles[i].pos.y, 10, WHITE);
   }
 }
-
-void game_screen() {}
